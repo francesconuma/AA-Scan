@@ -18,37 +18,44 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/agpl-3.0.en.html>. """
 
-import serial,time
+import serial,time,winsound
 import socket
 
-serverAddressList=[""]    # Put your Phone IP here, multiple IPs are supported now (untested)!
-serverPort=2021
+serverAddressList=["192.168.1.21"]    # Put your Phone IP here, multiple IPs are supported now (untested)!
+serverPort=2022
 bufferSize=12
-nPhotos=180                      # How many photos do you want? (~180 for best quality)
-
-serialConnection = serial.Serial('/dev/ttyACM0',9600)   # Change this to COMx if you are on Windows, COMx is the port where Arduino serial is connected
+nPhotos=45
+nCicli=4
+takephotoCommand="chez"
+rotateCommand="go\n"
+quitCommand="quit"
+changeSound=winsound.MB_OK
+serialConnection = serial.Serial('COM3',9600)   # Change this to COMx if you are on Windows, COMx is the port where Arduino serial is connected
 print("Serial connection established on {name}".format(name=serialConnection.name))
 time.sleep(3)
 serialConnection.write((str(nPhotos)+"\n").encode())
 time.sleep(1)
 
 socketList=[]
-for server in serverAddressList:
-    socketSendCommands = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    socketSendCommands.connect((server,serverPort))
-    socketList.append(socketSendCommands)
-
-for i in range(nPhotos):
-    for socketSendCommands in socketList:
-        socketSendCommands.send("chez".encode())
-    time.sleep(1.5)
-    serialConnection.write("go\n".encode())
-    time.sleep(1.5)
-    print("Progress: {count}/{total}".format(count=i+1,total=nPhotos))
+for phone in serverAddressList:
+    socketPhoneCommands = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    socketPhoneCommands.connect((phone,serverPort))
+    socketList.append(socketPhoneCommands)
+    
+for j in range(nCicli):
+    for i in range(nPhotos):
+        for socketSendCommands in socketList:
+            socketSendCommands.send(takephotocommand.encode())
+        time.sleep(1.5)
+        serialConnection.write(rotateCommand.encode())
+        time.sleep(1.5)
+        print("{iteration}/{totalIteration} Progress: {count}/{total}".format(iteration=i+1,totalIteration=nCicli,count=i+1,total=nPhotos))
+    winsound.MessageBeep(changeSound)
+    time.sleep(10)
 
 print("DONE!")
 time.sleep(1)
 serialConnection.close()
 for socketSendCommands in socketList:
-    socketSendCommands.send("quit".encode())
+    socketSendCommands.send(quitCommand.encode())
     socketSendCommands.close()
